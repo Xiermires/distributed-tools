@@ -109,22 +109,24 @@ public class Node {
 	return new BigInteger(hasher.hash().toString(), 16);
     }
 
+    private static final KryoSerializer serializer = new KryoSerializer();
+    private static final Function<byte[], Message> toMsg = bytes -> serializer.deserialize(bytes, Message.class);
+    
     @Sharable
     class Handler extends SimpleChannelInboundHandler<ByteTransfer> {
 
 	@Override
 	protected void channelRead0(ChannelHandlerContext ctx, ByteTransfer msg) throws Exception {
-	    final KryoSerializer kryo = new KryoSerializer();
-	    final Message message = kryo.deserialize(msg.payload, Message.class);
+	    final Message message = serializer.deserialize(msg.payload, Message.class);
 	    switch (message.getType()) {
 	    case SYNC_PULL:
-		ctx.writeAndFlush(new ByteTransfer(msg.id, kryo.serialize(Message.dto(Node.this))));
+		ctx.writeAndFlush(new ByteTransfer(msg.id, serializer.serialize(Message.dto(Node.this))));
 		break;
 	    case SYNC_PUSH:
 		updatePrevNext(Node.this, message);
 		break;
 	    case PUT:
-		cache.put(message.getKey(), kryo.serialize(message.getValue()));
+		cache.put(message.getKey(), serializer.serialize(message.getValue()));
 		break;
 	    case GET:
 		ctx.writeAndFlush(new ByteTransfer(msg.id, cache.getIfPresent(message.getKey())));
@@ -132,9 +134,6 @@ public class Node {
 	    }
 	}
     }
-
-    private static final KryoSerializer serializer = new KryoSerializer();
-    private static final Function<byte[], Message> toMsg = bytes -> serializer.deserialize(bytes, Message.class);
 
     /**
      * Joins a new node into an existing network.
