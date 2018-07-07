@@ -5,7 +5,9 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 
 import java.math.BigInteger;
+import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.NavigableMap;
@@ -30,7 +32,7 @@ import com.google.common.cache.Weigher;
 import com.google.common.hash.Hasher;
 import com.google.common.hash.Hashing;
 
-public class Node {
+public class Node implements Comparable<Node> {
 
     private static final int STANDARD_CACHE_SIZE = 100 * 1024 * 1024;
 
@@ -109,9 +111,9 @@ public class Node {
 	return new BigInteger(hasher.hash().toString(), 16);
     }
 
-    private static final KryoSerializer serializer = new KryoSerializer();
-    private static final Function<byte[], Message> toMsg = bytes -> serializer.deserialize(bytes, Message.class);
-    
+    private final KryoSerializer serializer = new KryoSerializer();
+    private final Function<byte[], Message> toMsg = bytes -> serializer.deserialize(bytes, Message.class);
+
     @Sharable
     class Handler extends SimpleChannelInboundHandler<ByteTransfer> {
 
@@ -123,7 +125,7 @@ public class Node {
 		ctx.writeAndFlush(new ByteTransfer(msg.id, serializer.serialize(Message.dto(Node.this))));
 		break;
 	    case SYNC_PUSH:
-		updatePrevNext(Node.this, message);
+		updateNodeLinks(Node.this, message);
 		break;
 	    case PUT:
 		cache.put(message.getKey(), serializer.serialize(message.getValue()));
@@ -144,7 +146,7 @@ public class Node {
     }
 
     private Node[] findEnclosingInterval(Node first, BigInteger id) throws InterruptedException, ExecutionException {
-	Node prev = getClosestStart(first.sync(), id), next = first.getNext();
+	Node prev = getClosestStart(first.sync(), id), next = prev.getNext();
 
 	// Handle one node scenario
 	if (next == null) {
@@ -173,20 +175,21 @@ public class Node {
 	return new Node[] { prev, next };
     }
 
-    // TODO recurse
-    private static Node getClosestStart(Node node, BigInteger id) {
+    private static Node getClosestStart(Node node, BigInteger id) throws InterruptedException, ExecutionException {
 	final Entry<BigInteger, Node> floor = node.fingers.floorEntry(id);
 	final Entry<BigInteger, Node> ceiling = node.fingers.ceilingEntry(id);
 
+	final Node closest;
 	if (floor != null && ceiling != null) {
-	    return getClosestBetween(id, node, getClosestBetween(id, floor.getValue(), ceiling.getValue()));
+	    closest = getClosestBetween(id, node, getClosestBetween(id, floor.getValue(), ceiling.getValue()));
 	} else if (floor != null) {
-	    return getClosestBetween(id, node, floor.getValue());
+	    closest = getClosestBetween(id, node, floor.getValue());
 	} else if (ceiling != null) {
-	    return getClosestBetween(id, node, ceiling.getValue());
+	    closest = getClosestBetween(id, node, ceiling.getValue());
 	} else {
 	    return node;
 	}
+	return closest == null || node.equals(closest) ? node : getClosestStart(closest.sync(), id);
     }
 
     private static Node getClosestBetween(BigInteger ref, Node n1, Node n2) {
@@ -216,7 +219,7 @@ public class Node {
     public Node sync() throws InterruptedException, ExecutionException {
 	try (Conduit channel = pool.getOrCreate(hostname + ":" + port)) {
 	    final Message answer = channel.send(Message.sync(), toMsg).get();
-	    updatePrevNext(this, answer);
+	    updateNodeLinks(this, answer);
 	}
 	return this;
     }
@@ -231,15 +234,25 @@ public class Node {
 	return this;
     }
 
-    private static void updatePrevNext(Node node, Message message) throws InterruptedException {
-	final String[] prev = message.getCurrPrevNext()[1] != null ? message.getCurrPrevNext()[1].split(":") : null;
-	final String[] next = message.getCurrPrevNext()[2] != null ? message.getCurrPrevNext()[2].split(":") : null;
+    // links in the form hostname:port in the following order { prev, next, firger1, ..., fingerN }
+    private static void updateNodeLinks(Node node, Message message) throws InterruptedException {
+	final String[] nodeLinks = message.getNodeLinks();
+	final String[] prev = nodeLinks[1] != null ? nodeLinks[1].split(":") : null;
+	final String[] next = nodeLinks[2] != null ? nodeLinks[2].split(":") : null;
 	if (prev != null) {
 	    node.setPrev(new Node(prev[0], Integer.parseInt(prev[1]), new BigInteger(prev[2]), node.pool));
 	}
 	if (next != null) {
 	    node.setNext(new Node(next[0], Integer.parseInt(next[1]), new BigInteger(next[2]), node.pool));
 	}
+
+	final Map<BigInteger, Node> fingers = new HashMap<>();
+	for (int i = 3; i < nodeLinks.length; i++) {
+	    final String[] finger = nodeLinks[i].split(":");
+	    final BigInteger fingerId = new BigInteger(finger[2]);
+	    fingers.put(fingerId, new Node(finger[0], Integer.parseInt(finger[1]), fingerId, node.pool));
+	}
+	node.setFingers(fingers);
     }
 
     /**
@@ -270,6 +283,10 @@ public class Node {
     public void setFingers(Map<BigInteger, Node> fingers) {
 	this.fingers.clear();
 	this.fingers.putAll(fingers);
+    }
+
+    public Collection<Node> getFingers() {
+	return fingers.values();
     }
 
     public Node getPrev() {
@@ -320,5 +337,15 @@ public class Node {
 	} else if (!id.equals(other.id))
 	    return false;
 	return true;
+    }
+
+    @Override
+    public String toString() {
+	return hostname + ":" + port + " [" + id + "]";
+    }
+
+    @Override
+    public int compareTo(Node o) {
+	return id.compareTo(o.id);
     }
 }

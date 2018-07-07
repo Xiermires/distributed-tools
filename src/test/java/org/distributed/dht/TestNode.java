@@ -108,7 +108,7 @@ public class TestNode {
     }
 
     @Test
-    public void updateFingers() throws InterruptedException, ExecutionException {
+    public void testPerformanceUsingFingers() throws InterruptedException, ExecutionException {
 	final List<Node> nodes = new ArrayList<>();
 	try {
 	    for (int i = 0; i < 25; i++) {
@@ -116,16 +116,17 @@ public class TestNode {
 		node.join(first);
 		nodes.add(node);
 	    }
-	    
+
+	    // Update the fingers of the first node only
 	    Topology.updateFingers(first);
 
-	    for (int i = 0; i < 10000; i++) {
+	    for (int i = 0; i < 1000; i++) {
 		@SuppressWarnings("deprecation")
 		final BigInteger key = new BigInteger(Hashing.sha1().hashInt(i).toString(), 16);
 		first.put(key, 1000 - i);
 	    }
 
-	    for (int i = 0; i < 10000; i++) {
+	    for (int i = 0; i < 1000; i++) {
 		@SuppressWarnings("deprecation")
 		final BigInteger key = new BigInteger(Hashing.sha1().hashInt(i).toString(), 16);
 		assertThat(first.get(key, Integer.class), is(1000 - i));
@@ -136,9 +137,9 @@ public class TestNode {
 	    }
 	}
     }
-    
+
     @Test
-    public void measurePerformance() throws InterruptedException, ExecutionException {
+    public void testPerformance() throws InterruptedException, ExecutionException {
 	final List<Node> nodes = new ArrayList<>();
 	try {
 	    for (int i = 0; i < 25; i++) {
@@ -147,13 +148,13 @@ public class TestNode {
 		nodes.add(node);
 	    }
 
-	    for (int i = 0; i < 10000; i++) {
+	    for (int i = 0; i < 1000; i++) {
 		@SuppressWarnings("deprecation")
 		final BigInteger key = new BigInteger(Hashing.sha1().hashInt(i).toString(), 16);
 		first.put(key, 1000 - i);
 	    }
 
-	    for (int i = 0; i < 10000; i++) {
+	    for (int i = 0; i < 1000; i++) {
 		@SuppressWarnings("deprecation")
 		final BigInteger key = new BigInteger(Hashing.sha1().hashInt(i).toString(), 16);
 		assertThat(first.get(key, Integer.class), is(1000 - i));

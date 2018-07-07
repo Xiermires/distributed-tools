@@ -1,6 +1,8 @@
 package org.distributed.dht;
 
 import java.math.BigInteger;
+import java.util.ArrayList;
+import java.util.List;
 
 public class Message {
 
@@ -24,7 +26,7 @@ public class Message {
     };
 
     private MessageType type;
-    private String[] currPrevNext;
+    private String[] links;
 
     // V get (K)
     // put (K, V)
@@ -88,26 +90,42 @@ public class Message {
 	this.value = value;
     }
 
-    public String[] getCurrPrevNext() {
-	return currPrevNext;
+    /**
+     * A String array of the known links of this node in the following form <code>hostname:port:id</code>.
+     * <p>
+     * Position 0 is always the current node.<br>
+     * Position 1 is always the previous link or <code>null</code> if no previous. <br>
+     * Position 0 is always the next link or <code>null</code> if no next. <br>
+     * Positions 3..n are the known fingers.
+     */
+    public String[] getNodeLinks() {
+	return links;
     }
 
     public void setNode(Node node) {
-	currPrevNext = new String[3];
-	currPrevNext[0] = node.getHostname() + ":" + node.getPort() + ":" + node.getId();
+	final List<String> links = new ArrayList<>();
+	links.add(node.getHostname() + ":" + node.getPort() + ":" + node.getId());
 	if (node.getPrev() != null) {
-	    currPrevNext[1] = node.getPrev().getHostname() + //
+	    links.add(node.getPrev().getHostname() + //
 		    ":" + //
 		    node.getPrev().getPort() + //
 		    ":" + //
-		    node.getPrev().getId();
+		    node.getPrev().getId());
+	} else {
+	    links.add(null);
 	}
 	if (node.getNext() != null) {
-	    currPrevNext[2] = node.getNext().getHostname() + //
+	    links.add(node.getNext().getHostname() + //
 		    ":" + //
 		    node.getNext().getPort() + //
 		    ":" + //
-		    node.getNext().getId();
+		    node.getNext().getId());
+	} else {
+	    links.add(null);
 	}
+	for (Node finger : node.getFingers()) {
+	    links.add(finger.getHostname() + ":" + finger.getPort() + ":" + finger.getId());
+	}
+	this.links = links.toArray(new String[links.size()]);
     }
 }
