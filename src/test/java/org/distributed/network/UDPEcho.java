@@ -1,21 +1,20 @@
 package org.distributed.network;
 
-import org.distributed.conduit.ByteTransfer;
-
-import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 
-@Sharable
-public class Echo extends SimpleChannelInboundHandler<ByteTransfer> {
+import org.distributed.conduit.ByteTransfer;
+import org.distributed.conduit.UDPConduit;
+
+public class UDPEcho extends SimpleChannelInboundHandler<ByteTransfer> {
 
     private final long sleep;
 
-    public Echo() {
+    public UDPEcho() {
 	this.sleep = -1;
     }
 
-    public Echo(long sleep) {
+    public UDPEcho(long sleep) {
 	this.sleep = sleep;
     }
 
@@ -24,7 +23,9 @@ public class Echo extends SimpleChannelInboundHandler<ByteTransfer> {
 	if (sleep > 0) {
 	    Thread.sleep(sleep);
 	}
-	ctx.writeAndFlush(msg);
+	try (UDPConduit conduit = new UDPConduit(msg.getSenderHostname(), msg.getSenderPort(), false)) {
+	    conduit.send(msg);
+	}
     }
 
     @Override
@@ -32,4 +33,5 @@ public class Echo extends SimpleChannelInboundHandler<ByteTransfer> {
 	cause.printStackTrace();
 	ctx.close();
     }
+
 }

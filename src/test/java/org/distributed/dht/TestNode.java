@@ -11,7 +11,7 @@ import java.util.List;
 import java.util.Random;
 import java.util.concurrent.ExecutionException;
 
-import org.distributed.conduit.CloseableConduit;
+import org.distributed.conduit.TCPConduit;
 import org.distributed.conduit.ConduitFactory;
 import org.distributed.conduit.ConduitPool;
 import org.distributed.conduit.NioGroupFactory;
@@ -33,7 +33,7 @@ public class TestNode {
 	final ConduitFactory<String> factory = (url) -> {
 	    try {
 		final String[] hostPort = url.split(":");
-		return new CloseableConduit(hostPort[0], Integer.valueOf(hostPort[1]), NioGroupFactory.minimal);
+		return new TCPConduit(hostPort[0], Integer.valueOf(hostPort[1]), NioGroupFactory.minimal);
 	    } catch (Exception e) {
 		throw new IllegalArgumentException("Cannot create. Expected format 'hostname:port'", e);
 	    }

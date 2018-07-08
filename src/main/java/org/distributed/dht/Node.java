@@ -17,12 +17,12 @@ import java.util.function.Function;
 
 import org.dev.serialize.impl.KryoSerializer;
 import org.distributed.conduit.ByteTransfer;
-import org.distributed.conduit.CloseableConduit;
-import org.distributed.conduit.CloseableServer;
 import org.distributed.conduit.Conduit;
 import org.distributed.conduit.ConduitFactory;
 import org.distributed.conduit.ConduitPool;
 import org.distributed.conduit.NioGroupFactory;
+import org.distributed.conduit.TCPConduit;
+import org.distributed.conduit.TCPServer;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Charsets;
@@ -36,7 +36,7 @@ public class Node implements Comparable<Node> {
 
     private static final int STANDARD_CACHE_SIZE = 100 * 1024 * 1024;
 
-    private transient CloseableServer server;
+    private transient TCPServer server;
 
     private final String hostname;
     private final int port;
@@ -64,7 +64,7 @@ public class Node implements Comparable<Node> {
 	final ConduitFactory<String> factory = (url) -> {
 	    try {
 		final String[] hostPort = url.split(":");
-		return new CloseableConduit(hostPort[0], Integer.valueOf(hostPort[1]), NioGroupFactory.minimal);
+		return new TCPConduit(hostPort[0], Integer.valueOf(hostPort[1]), NioGroupFactory.minimal);
 	    } catch (Exception e) {
 		throw new IllegalArgumentException("Cannot create. Expected format 'hostname:port'", e);
 	    }
@@ -88,7 +88,7 @@ public class Node implements Comparable<Node> {
     }
 
     public Node start() throws InterruptedException {
-	server = new CloseableServer(new Handler(), hostname, port);
+	server = new TCPServer(new Handler(), hostname, port);
 	return this;
     }
 
