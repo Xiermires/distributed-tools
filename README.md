@@ -58,7 +58,7 @@ if (port == -1) {
     throw new IllegalStateException("Cannot communicate. Lost packet?");
 }
 
-final Conduit conduit = new TCPConduit("192.168.96.2", port); // open a tcp conduit
+final Conduit conduit = new TCPConduit("192.168.96.3", port); // open a tcp conduit
 // ...
 ```
 ### Distributed hash table (DHT)
