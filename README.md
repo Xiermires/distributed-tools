@@ -90,10 +90,9 @@ nodeThree.join(new Node("192.168.96.2", 10001)); // peer three joins peer one / 
 ```
 Now that the DHT is connected, we can put / get in it similarly to in a regular Map.
 ```java
-nodeOne.put(Keys.of("key-1"), "this-is-a-value")); // puts { key-1 : value1 } in the DHT (not necessarily in nodeOne)
-System.out.println(nodeOne.get(Keys.of("key-1"), String.class)); // gets value1 from somewhere in the DHT
+nodeOne.put(Keys.of("key-1"), "this-is-a-value")); // puts { key-1 : value1 } somewhere in the DHT
+System.out.println(nodeOne.get(Keys.of("key-1"), String.class)); // gets value1 from the DHT
 ```
-
 
 
 
