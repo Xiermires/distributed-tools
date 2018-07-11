@@ -6,6 +6,7 @@ import static org.junit.Assert.assertThat;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.distributed.conduit.Conduit;
 import org.distributed.conduit.TCPConduit;
 import org.distributed.conduit.TCPServer;
 import org.distributed.conduit.UDPConduit;
@@ -34,7 +35,7 @@ public class TestTransfer {
     @Test
     public void testTcpTransfer() throws Exception {
 	final List<String> expected = new ArrayList<>();
-	try (TCPConduit conduit = new TCPConduit("127.0.0.1", 19999)) {
+	try (Conduit conduit = new TCPConduit("127.0.0.1", 19999)) {
 	    expected.add(conduit.send("One", String.class).get());
 	    expected.add(conduit.send("Two", String.class).get());
 	    expected.add(conduit.send("Three", String.class).get());
@@ -45,7 +46,7 @@ public class TestTransfer {
     @Test
     public void testUdpTransfer() throws Exception {
 	final List<String> expected = new ArrayList<>();
-	try (UDPConduit conduit = new UDPConduit("127.0.0.1", 20000, true)) {
+	try (Conduit conduit = new UDPConduit("127.0.0.1", 20000, true)) {
 	    expected.add(conduit.send("One", String.class).get());
 	    expected.add(conduit.send("Two", String.class).get());
 	    expected.add(conduit.send("Three", String.class).get());

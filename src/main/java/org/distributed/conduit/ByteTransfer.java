@@ -8,7 +8,7 @@ public class ByteTransfer {
 
     public final int id;
     public final byte[] payload;
-    
+
     private transient String senderHostname;
     private transient int senderPort;
     private transient String receiverHostname;
@@ -39,7 +39,7 @@ public class ByteTransfer {
 	buffer.readBytes(payload);
 	return new ByteTransfer(id, payload);
     }
-    
+
     /**
      * It creates a byte transfer from the given bytes.
      * <p>
@@ -98,5 +98,5 @@ public class ByteTransfer {
 
     void setReceiverPort(int receiverPort) {
 	this.receiverPort = receiverPort;
-    }    
+    }
 }

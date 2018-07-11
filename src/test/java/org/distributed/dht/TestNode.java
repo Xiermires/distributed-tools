@@ -11,16 +11,14 @@ import java.util.List;
 import java.util.Random;
 import java.util.concurrent.ExecutionException;
 
-import org.distributed.conduit.TCPConduit;
 import org.distributed.conduit.ConduitFactory;
 import org.distributed.conduit.ConduitPool;
 import org.distributed.conduit.NioGroupFactory;
+import org.distributed.conduit.TCPConduit;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import com.google.common.base.Charsets;
-import com.google.common.hash.Hasher;
 import com.google.common.hash.Hashing;
 
 public class TestNode {
@@ -91,12 +89,8 @@ public class TestNode {
 		nodes.add(node);
 	    }
 
-	    @SuppressWarnings("deprecation")
-	    final Hasher hasher = Hashing.sha1().newHasher();
-	    hasher.putString("this is a key", Charsets.UTF_8);
-	    final BigInteger key = new BigInteger(hasher.hash().toString(), 16);
-
 	    // put the value into some node storage
+	    final BigInteger key = Keys.of("this is a key");
 	    first.put(key, "this is a value");
 	    assertThat(first.get(key, String.class), is("this is a value"));
 	    assertThat(first.cache.getIfPresent(key), is(nullValue()));
